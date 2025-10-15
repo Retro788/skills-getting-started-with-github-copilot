@@ -39,6 +39,8 @@
         </form>
         <div id="message" class="hidden"></div>
       </section>
+
+      <div id="activities"></div>
     </main>
 
     <footer>
@@ -46,5 +48,28 @@
     </footer>
 
     <script src="app.js"></script>
+    <script>
+      async function loadActivities() {
+          const res = await fetch("/activities");
+          const activities = await res.json();
+          const container = document.getElementById("activities");
+          container.innerHTML = "";
+          for (const [name, info] of Object.entries(activities)) {
+              const participantsList = info.participants.map(p => `<li>${p}</li>`).join("");
+              container.innerHTML += `
+                  <div class="activity-card">
+                      <h2>${name}</h2>
+                      <p>${info.description}</p>
+                      <p><strong>Schedule:</strong> ${info.schedule}</p>
+                      <div class="participants-section">
+                          <strong>Participants (${info.participants.length} / ${info.max_participants}):</strong>
+                          <ul>${participantsList || "<li>No participants yet</li>"}</ul>
+                      </div>
+                  </div>
+              `;
+          }
+      }
+      loadActivities();
+    </script>
   </body>
 </html>
