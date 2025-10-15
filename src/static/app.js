@@ -36,17 +36,38 @@ async function loadActivities() {
     header.textContent = `Participants (${count} / ${act.max_participants})`;
     participantsSection.appendChild(header);
 
-    const list = document.createElement('ul');
+    const list = document.createElement('div');
+    list.className = 'participants-list';
     if (count > 0) {
       act.participants.forEach(email => {
-        const li = document.createElement('li');
-        li.textContent = email;
-        list.appendChild(li);
+        const item = document.createElement('span');
+        item.className = 'participant-item';
+        item.textContent = email;
+        const del = document.createElement('span');
+        del.className = 'delete-icon';
+        del.title = 'Remove';
+        del.innerHTML = '&#10060;';
+        del.onclick = async () => {
+          if (!confirm(`Remove ${email} from ${name}?`)) return;
+          const resp = await fetch(`/activities/${encodeURIComponent(name)}/unregister`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          if (resp.ok) {
+            await loadActivities();
+          } else {
+            alert('Could not remove participant.');
+          }
+        };
+        item.appendChild(del);
+        list.appendChild(item);
       });
     } else {
-      const li = document.createElement('li');
-      li.textContent = 'No participants yet';
-      list.appendChild(li);
+      const item = document.createElement('span');
+      item.className = 'no-participant';
+      item.textContent = 'No participants yet';
+      list.appendChild(item);
     }
     participantsSection.appendChild(list);
     card.appendChild(participantsSection);
