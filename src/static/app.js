@@ -43,19 +43,23 @@ async function loadActivities() {
         const item = document.createElement('span');
         item.className = 'participant-item';
         item.textContent = email;
-        const del = document.createElement('span');
+        const del = document.createElement('button');
         del.className = 'delete-icon';
+        del.setAttribute('aria-label', `Remove ${email} from ${name}`);
         del.title = 'Remove';
         del.innerHTML = '&#10060;';
-        del.onclick = async () => {
+        del.onclick = async (e) => {
+          e.stopPropagation();
           if (!confirm(`Remove ${email} from ${name}?`)) return;
-          const resp = await fetch(`/activities/${encodeURIComponent(name)}/unregister`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+          const resp = await fetch(`/activities/${encodeURIComponent(name)}/signup?email=${encodeURIComponent(email)}`, {
+            method: 'DELETE'
           });
           if (resp.ok) {
-            await loadActivities();
+            // Refresca solo la tarjeta
+            const updated = await fetch('/activities').then(r => r.json());
+            const newAct = updated[name];
+            renderParticipants(list, name, newAct);
+            header.textContent = `Participants (${newAct.participants.length} / ${newAct.max_participants})`;
           } else {
             alert('Could not remove participant.');
           }
@@ -93,11 +97,53 @@ async function loadActivities() {
           throw new Error(err.detail || 'Signup failed');
         }
         input.value = '';
-        await loadActivities(); // refresh participants after a successful signup
+        // Refresca solo la tarjeta
+        const updated = await fetch('/activities').then(r => r.json());
+        const newAct = updated[name];
+        renderParticipants(list, name, newAct);
+        header.textContent = `Participants (${newAct.participants.length} / ${newAct.max_participants})`;
       } catch (e) {
         alert(e.message);
       }
     });
+// Renderiza la lista de participantes de una actividad
+function renderParticipants(list, name, act) {
+  list.innerHTML = '';
+  const count = Array.isArray(act.participants) ? act.participants.length : 0;
+  if (count > 0) {
+    act.participants.forEach(email => {
+      const item = document.createElement('span');
+      item.className = 'participant-item';
+      item.textContent = email;
+      const del = document.createElement('button');
+      del.className = 'delete-icon';
+      del.setAttribute('aria-label', `Remove ${email} from ${name}`);
+      del.title = 'Remove';
+      del.innerHTML = '&#10060;';
+      del.onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(`Remove ${email} from ${name}?`)) return;
+        const resp = await fetch(`/activities/${encodeURIComponent(name)}/signup?email=${encodeURIComponent(email)}`, {
+          method: 'DELETE'
+        });
+        if (resp.ok) {
+          const updated = await fetch('/activities').then(r => r.json());
+          const newAct = updated[name];
+          renderParticipants(list, name, newAct);
+        } else {
+          alert('Could not remove participant.');
+        }
+      };
+      item.appendChild(del);
+      list.appendChild(item);
+    });
+  } else {
+    const item = document.createElement('span');
+    item.className = 'no-participant';
+    item.textContent = 'No participants yet';
+    list.appendChild(item);
+  }
+}
 
     signup.appendChild(input);
     signup.appendChild(btn);
