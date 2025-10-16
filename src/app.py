@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi import Query
 # ...existing code...
 
 # ...existing code...
@@ -8,7 +9,7 @@ app = FastAPI(title="Mergington High School API",
 # ...existing code...
 
 @app.delete("/activities/{activity_name}/signup")
-def unregister_for_activity(activity_name: str, email: str):
+def unregister_for_activity(activity_name: str, email: str = Query(...)):
     """Unregister a student from an activity"""
     if activity_name not in activities:
         raise HTTPException(status_code=404, detail="Activity not found")
